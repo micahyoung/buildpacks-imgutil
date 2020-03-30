@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -23,20 +24,14 @@ import (
 	h "github.com/buildpacks/imgutil/testhelpers"
 )
 
-var registryPort string
-
-func newTestImageName() string {
-	return "localhost:" + registryPort + "/pack-image-test-" + h.RandString(10)
-}
+var dockerRegistry *h.DockerRegistry
 
 func TestRemoteImage(t *testing.T) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	dockerRegistry := h.NewDockerRegistry()
+	dockerRegistry = h.NewDockerRegistry()
 	dockerRegistry.Start(t)
-	defer dockerRegistry.Stop(t)
-
-	registryPort = dockerRegistry.Port
+	//defer dockerRegistry.Stop(t)
 
 	spec.Run(t, "RemoteImage", testRemoteImage, spec.Sequential(), spec.Report(report.Terminal{}))
 }
@@ -48,20 +43,22 @@ func testRemoteImage(t *testing.T, when spec.G, it spec.S) {
 	it.Before(func() {
 		var err error
 		dockerClient = h.DockerCli(t)
+
+		_, err = dockerClient.RegistryLogin(context.TODO(), types.AuthConfig{Username: dockerRegistry.Username, Password: dockerRegistry.Password, ServerAddress: dockerRegistry.Host+":"+dockerRegistry.Port})
 		h.AssertNil(t, err)
-		repoName = newTestImageName()
+		repoName = dockerRegistry.NewTestImageName()
 	})
 
 	when("#NewRemote", func() {
 		when("no base image is given", func() {
 			it("returns an empty image", func() {
-				_, err := remote.NewImage(newTestImageName(), authn.DefaultKeychain)
+				_, err := remote.NewImage(dockerRegistry.NewTestImageName(), authn.DefaultKeychain)
 				h.AssertNil(t, err)
 			})
 
-			it("sets sensible defaults for all required fields", func() {
+			it.Focus("sets sensible defaults for all required fields", func() {
 				// os, architecture, and rootfs are required per https://github.com/opencontainers/image-spec/blob/master/config.md
-				img, err := remote.NewImage(newTestImageName(), authn.DefaultKeychain)
+				img, err := remote.NewImage(dockerRegistry.NewTestImageName(), authn.DefaultKeychain)
 				h.AssertNil(t, err)
 				h.AssertNil(t, img.Save())
 				h.AssertNil(t, h.PullImage(dockerClient, img.Name()))
@@ -182,7 +179,7 @@ func testRemoteImage(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Env", func() {
 		when("image exists", func() {
-			var baseImageName = newTestImageName()
+			var baseImageName = dockerRegistry.NewTestImageName()
 
 			it.Before(func() {
 				var err error
@@ -429,7 +426,7 @@ func testRemoteImage(t *testing.T, when spec.G, it spec.S) {
 			var oldBaseLayers, newBaseLayers, repoTopLayers []string
 			it.Before(func() {
 				// new base
-				newBase = "localhost:" + registryPort + "/pack-newbase-test-" + h.RandString(10)
+				newBase = dockerRegistry.NewTestImageName("newbase")
 				newBaseLayer1Path, err := h.CreateSingleFileTar("/base.txt", "new-base")
 				h.AssertNil(t, err)
 				defer os.Remove(newBaseLayer1Path)
@@ -452,7 +449,7 @@ func testRemoteImage(t *testing.T, when spec.G, it spec.S) {
 				newBaseLayers = manifestLayers(t, newBase)
 
 				// old base image
-				oldBase = "localhost:" + registryPort + "/pack-oldbase-test-" + h.RandString(10)
+				oldBase = dockerRegistry.NewTestImageName("oldbase")
 				oldBaseLayer1Path, err := h.CreateSingleFileTar("/base.txt", "old-base")
 				h.AssertNil(t, err)
 				defer os.Remove(oldBaseLayer1Path)
@@ -695,7 +692,7 @@ func testRemoteImage(t *testing.T, when spec.G, it spec.S) {
 			it.Before(func() {
 				var err error
 
-				prevImageName = "localhost:" + registryPort + "/pack-image-test-" + h.RandString(10)
+				prevImageName = dockerRegistry.NewTestImageName("previous")
 				prevImage, err := remote.NewImage(
 					prevImageName,
 					authn.DefaultKeychain,
@@ -836,11 +833,11 @@ func testRemoteImage(t *testing.T, when spec.G, it spec.S) {
 
 		when("additional names are provided", func() {
 			var (
-				repoName            = newTestImageName()
+				repoName            = dockerRegistry.NewTestImageName()
 				additionalRepoNames = []string{
 					repoName + ":" + h.RandString(5),
-					newTestImageName(),
-					newTestImageName(),
+					dockerRegistry.NewTestImageName(),
+					dockerRegistry.NewTestImageName(),
 				}
 				successfulRepoNames = append([]string{repoName}, additionalRepoNames...)
 			)
@@ -861,7 +858,7 @@ func testRemoteImage(t *testing.T, when spec.G, it spec.S) {
 
 			when("a single image name fails", func() {
 				it("returns results with errors for those that failed", func() {
-					failingName := newTestImageName() + ":🧨"
+					failingName := dockerRegistry.NewTestImageName(":🧨")
 
 					image, err := remote.NewImage(repoName, authn.DefaultKeychain)
 					h.AssertNil(t, err)

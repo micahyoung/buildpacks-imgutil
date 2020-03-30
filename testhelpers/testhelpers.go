@@ -208,8 +208,11 @@ func PushImage(dockerCli dockercli.CommonAPIClient, ref string) error {
 	return rc.Close()
 }
 
-func HttpGetE(url string) (string, error) {
-	resp, err := http.DefaultClient.Get(url)
+func HttpGetAuthE(url, username, password string) (string, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	req.SetBasicAuth(username, password)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
