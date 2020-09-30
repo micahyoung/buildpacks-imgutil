@@ -12,9 +12,17 @@ format: install-goimports
 	@echo "> Formating code..."
 	@goimports -l -w -local ${PACKAGE_BASE} .
 
+generate: generate-windows-baselayer
+
 install-golangci-lint:
 	@echo "> Installing golangci-lint..."
 	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
+
+generate-windows-baselayer:
+	@echo "> Generating Windows Base Layer"
+	docker build tools/windows-baselayer --tag windows-baselayer --quiet
+	docker run --rm -v gomodcache:/go/pkg/mod windows-baselayer go test ./...
+	docker run --rm -v gomodcache:/go/pkg/mod windows-baselayer go run . -- layer BaseLayerBytes > layer/windows_baselayer.go
 
 lint: install-golangci-lint
 	@echo "> Linting code..."
