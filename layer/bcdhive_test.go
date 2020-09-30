@@ -1,40 +1,63 @@
-package bcdhive_test
+//+build hivex
+
+package layer_test
 
 import (
 	"bytes"
+	"compress/gzip"
+	"encoding/base64"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"testing"
 
-	"github.com/buildpack/pack/tools/windows-baselayer-bcd/bcdhive"
+	"github.com/buildpacks/imgutil/layer"
+
 	"gotest.tools/assert"
 )
 
-type value struct {
-	id      int64
-	name    string
-	vString string
-	vType   int64
-}
-
-type node struct {
-	name   string
-	id     int64
-	values []value
-}
-
-func TestGenerate(t *testing.T) {
-	output, err := bcdhive.Generate()
+func TestBaseLayerBCDMemoMatchesActual(t *testing.T) {
+	bcdBytes, err := layer.BaseLayerBCD()
 	assert.NilError(t, err)
+
+	gzipBuffer := &bytes.Buffer{}
+	gzipWriter, err := gzip.NewWriterLevel(gzipBuffer, gzip.BestCompression)
+	assert.NilError(t, err)
+
+	_, err = io.Copy(gzipWriter, bytes.NewBuffer(bcdBytes))
+	assert.NilError(t, err)
+
+	assert.NilError(t, gzipWriter.Close())
+
+	expectedEncodedBCD := base64.StdEncoding.EncodeToString(gzipBuffer.Bytes())
+
+	assert.Equal(t, layer.EncodedBCD, expectedEncodedBCD)
+}
+
+func TestBaseLayerBCDMemo(t *testing.T) {
+	bcdBytes, err := layer.DecodeBaseLayerBCD()
+	assert.NilError(t, err)
+
+	assertIsBCDBaseLayer(t, bcdBytes)
+}
+
+func TestBaseLayerBCDActual(t *testing.T) {
+	bcdBytes, err := layer.BaseLayerBCD()
+	assert.NilError(t, err)
+
+	assertIsBCDBaseLayer(t, bcdBytes)
+}
+
+func assertIsBCDBaseLayer(t *testing.T, bcdBytes []byte) {
+	t.Helper()
 
 	hiveFile, err := ioutil.TempFile("", "")
 	assert.NilError(t, err)
 	defer hiveFile.Close()
 	defer os.Remove(hiveFile.Name())
 
-	_, err = io.Copy(hiveFile, bytes.NewBuffer(output))
+	_, err = io.Copy(hiveFile, bytes.NewBuffer(bcdBytes))
 	assert.NilError(t, err)
 
 	cmd := exec.Command("hivexregedit", "--export", hiveFile.Name(), "Description")
@@ -80,5 +103,4 @@ func TestGenerate(t *testing.T) {
 "Element"=hex(1):7b,00,36,00,61,00,36,00,63,00,31,00,66,00,31,00,62,00,2d,00,35,00,39,00,64,00,34,00,2d,00,31,00,31,00,65,00,61,00,2d,00,39,00,34,00,33,00,38,00,2d,00,39,00,34,00,30,00,32,00,65,00,36,00,61,00,62,00,64,00,39,00,39,00,38,00,7d,00,00,00
 
 `)
-
 }

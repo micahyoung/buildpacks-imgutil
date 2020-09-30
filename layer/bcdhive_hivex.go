@@ -1,4 +1,6 @@
-package bcdhive
+//+build hivex
+
+package layer
 
 import (
 	"io"
@@ -13,7 +15,63 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func Generate() ([]byte, error) {
+var orderedEntries = []entry{
+	{"Description", []hivex.HiveValue{
+		{
+			Type:  hivex.RegDword,
+			Key:   "FirmwareModified",
+			Value: toDword(0x00, 0x00, 0x00, 0x01),
+		},
+		{
+			Type:  hivex.RegSz,
+			Key:   "KeyName",
+			Value: toRegSz("BCD00000000"),
+		},
+	}},
+	{`Objects/{6a6c1f1b-59d4-11ea-9438-9402e6abd998}/Description`, []hivex.HiveValue{
+		{
+			Type:  hivex.RegDword,
+			Key:   "Type",
+			Value: toDword(0x10, 0x20, 0x00, 0x03),
+		},
+	}},
+	{`Objects/{6a6c1f1b-59d4-11ea-9438-9402e6abd998}/Elements/12000004`, []hivex.HiveValue{
+		{
+			Type:  hivex.RegSz,
+			Key:   "Element",
+			Value: toRegSz("buildpacks.io"),
+		},
+	}},
+	{`Objects/{9dea862c-5cdd-4e70-acc1-f32b344d4795}/Description`, []hivex.HiveValue{
+		{
+			Type:  hivex.RegDword,
+			Key:   "Type",
+			Value: toDword(0x10, 0x10, 0x00, 0x02),
+		},
+	}},
+	{`Objects/{9dea862c-5cdd-4e70-acc1-f32b344d4795}/Elements/23000003`, []hivex.HiveValue{
+		{
+			Type:  hivex.RegSz,
+			Key:   "Element",
+			Value: toRegSz("{6a6c1f1b-59d4-11ea-9438-9402e6abd998}"),
+		},
+	}},
+}
+
+func toDword(values ...int) []byte {
+	var result []byte
+	for _, val := range values {
+		result = append([]byte{byte(val)}, result...)
+	}
+	return result
+}
+
+type entry struct {
+	path       string
+	hiveValues []hivex.HiveValue
+}
+
+func BaseLayerBCD() ([]byte, error) {
 	pkgs, err := packages.Load(&packages.Config{}, "github.com/gabriel-samfira/go-hivex")
 	if err != nil {
 		return nil, err
@@ -65,7 +123,7 @@ func Generate() ([]byte, error) {
 	return hiveBytes, nil
 }
 
-func toUtf16LE(inStr string) []byte {
+func toRegSz(inStr string) []byte {
 	utf16Encoder := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewEncoder()
 	outStr, _ := utf16Encoder.String(inStr)
 	outBytes := append([]byte(outStr), []byte("\x00\x00")...)
@@ -73,56 +131,13 @@ func toUtf16LE(inStr string) []byte {
 }
 
 func addBCDHiveEntries(h *hivex.Hivex) error {
-	entries := map[string][]hivex.HiveValue{
-		"Description": {
-			{
-				Type:  hivex.RegDword,
-				Key:   "FirmwareModified",
-				Value: []byte("\x01\x00\x00\x00"),
-			},
-			{
-				Type:  hivex.RegSz,
-				Key:   "KeyName",
-				Value: toUtf16LE("BCD00000000"),
-			},
-		},
-		`Objects/{6a6c1f1b-59d4-11ea-9438-9402e6abd998}/Description`: {
-			{
-				Type:  hivex.RegDword,
-				Key:   "Type",
-				Value: []byte("\x03\x00\x20\x10"),
-			},
-		},
-		`Objects/{6a6c1f1b-59d4-11ea-9438-9402e6abd998}/Elements/12000004`: {
-			{
-				Type:  hivex.RegSz,
-				Key:   "Element",
-				Value: toUtf16LE("buildpacks.io"),
-			},
-		},
-		`Objects/{9dea862c-5cdd-4e70-acc1-f32b344d4795}/Description`: {
-			{
-				Type:  hivex.RegDword,
-				Key:   "Type",
-				Value: []byte("\x02\x00\x10\x10"),
-			},
-		},
-		`Objects/{9dea862c-5cdd-4e70-acc1-f32b344d4795}/Elements/23000003`: {
-			{
-				Type:  hivex.RegSz,
-				Key:   "Element",
-				Value: toUtf16LE("{6a6c1f1b-59d4-11ea-9438-9402e6abd998}"),
-			},
-		},
-	}
-
-	for p, vals := range entries {
+	for _, ent := range orderedEntries {
 		node, err := h.Root()
 		if err != nil {
 			return err
 		}
 
-		pathChildren := strings.Split(p, "/")
+		pathChildren := strings.Split(ent.path, "/")
 		for _, childPath := range pathChildren {
 			existingRoot, err := h.NodeGetChild(node, childPath)
 			if err != nil {
@@ -140,7 +155,7 @@ func addBCDHiveEntries(h *hivex.Hivex) error {
 			}
 		}
 
-		if _, err := h.NodeSetValues(node, vals); err != nil {
+		if _, err := h.NodeSetValues(node, ent.hiveValues); err != nil {
 			return err
 		}
 	}

@@ -18,15 +18,15 @@ install-golangci-lint:
 	@echo "> Installing golangci-lint..."
 	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
 
-generate-windows-baselayer:
-	@echo "> Generating Windows Base Layer"
-	docker build tools/windows-baselayer --tag windows-baselayer --quiet
-	docker run --rm -v gomodcache:/go/pkg/mod windows-baselayer go test ./...
-	docker run --rm -v gomodcache:/go/pkg/mod windows-baselayer go run . -- layer BaseLayerBytes > layer/windows_baselayer.go
-
 lint: install-golangci-lint
 	@echo "> Linting code..."
 	@golangci-lint run -c golangci.yaml
 
-test: format lint
+test-hivex:
+	@echo "> Testing with Hivex Image"
+	docker build . -f tools/hivex-docker/Dockerfile --tag hivex-docker --quiet
+	docker run --rm -v gomodcache:/go/pkg/mod -v /var/run/docker.sock:/var/run/docker.sock --network=host hivex-docker \
+      $(GOCMD) test --tags=hivex -parallel=1 -count=1 -v ./...
+
+test: format lint test-hivex
 	$(GOCMD) test -parallel=1 -count=1 -v ./...
