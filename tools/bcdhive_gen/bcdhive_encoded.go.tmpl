@@ -9,10 +9,10 @@ import (
 	"io/ioutil"
 )
 
-const EncodedBCD = "{{.EncodedBytes}}"
+const encodedBytes = "{{.EncodedBytes}}"
 
 func {{.FuncName}}() ([]byte, error) {
-	gzipBytes, err := base64.StdEncoding.DecodeString(EncodedBCD)
+	gzipBytes, err := base64.StdEncoding.DecodeString(encodedBytes)
 	if err != nil {
 		return nil, err
 	}

@@ -31,7 +31,7 @@ func TestBaseLayerBCDMemoMatchesActual(t *testing.T) {
 
 	expectedEncodedBCD := base64.StdEncoding.EncodeToString(gzipBuffer.Bytes())
 
-	assert.Equal(t, EncodedBCD, expectedEncodedBCD)
+	assert.Equal(t, encodedBytes, expectedEncodedBCD)
 }
 
 func TestBaseLayerBCDMemo(t *testing.T) {

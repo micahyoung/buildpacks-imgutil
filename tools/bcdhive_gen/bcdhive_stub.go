@@ -1,6 +1,6 @@
 package main
 
-const EncodedBCD = ""
+const encodedBytes = ""
 
 func StubHiveBCD() ([]byte, error) {
 	return nil, nil

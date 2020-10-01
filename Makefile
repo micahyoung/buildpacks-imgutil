@@ -21,7 +21,11 @@ lint: install-golangci-lint
 	@golangci-lint run -c golangci.yaml
 
 generate: build-bcdhive-gen
+ifneq ($(OS),Windows_NT)
 	$(GOCMD) generate ./...
+else
+	@echo "> Not compatible with Docker Windows"
+endif
 
 build-bcdhive-gen:
 ifneq ($(OS),Windows_NT)
