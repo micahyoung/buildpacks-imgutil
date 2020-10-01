@@ -5,6 +5,8 @@ import (
 	"bytes"
 )
 
+//go:generate docker run --rm -v $PWD:/out/ bcdhive-gen /out/layer/bcdhive_gen.go layer BaseLayerBCD
+
 func BaseLayerBytes() ([]byte, error) {
 	bcdBytes, err := BaseLayerBCD()
 	if err != nil {

@@ -1,6 +1,4 @@
-//+build hivex
-
-package layer_test
+package main
 
 import (
 	"bytes"
@@ -12,13 +10,14 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/buildpacks/imgutil/layer"
-
 	"gotest.tools/assert"
 )
 
+// you must `go generate` a valid stub before running tests
+//go:generate go run ./ -- bcdhive_stub.go main StubHiveBCD
+
 func TestBaseLayerBCDMemoMatchesActual(t *testing.T) {
-	bcdBytes, err := layer.BaseLayerBCD()
+	bcdBytes, err := HiveBCD()
 	assert.NilError(t, err)
 
 	gzipBuffer := &bytes.Buffer{}
@@ -32,18 +31,18 @@ func TestBaseLayerBCDMemoMatchesActual(t *testing.T) {
 
 	expectedEncodedBCD := base64.StdEncoding.EncodeToString(gzipBuffer.Bytes())
 
-	assert.Equal(t, layer.EncodedBCD, expectedEncodedBCD)
+	assert.Equal(t, EncodedBCD, expectedEncodedBCD)
 }
 
 func TestBaseLayerBCDMemo(t *testing.T) {
-	bcdBytes, err := layer.DecodeBaseLayerBCD()
+	bcdBytes, err := StubHiveBCD()
 	assert.NilError(t, err)
 
 	assertIsBCDBaseLayer(t, bcdBytes)
 }
 
 func TestBaseLayerBCDActual(t *testing.T) {
-	bcdBytes, err := layer.BaseLayerBCD()
+	bcdBytes, err := HiveBCD()
 	assert.NilError(t, err)
 
 	assertIsBCDBaseLayer(t, bcdBytes)

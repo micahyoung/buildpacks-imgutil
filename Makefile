@@ -12,8 +12,6 @@ format: install-goimports
 	@echo "> Formating code..."
 	@goimports -l -w -local ${PACKAGE_BASE} .
 
-generate: generate-windows-baselayer
-
 install-golangci-lint:
 	@echo "> Installing golangci-lint..."
 	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -22,11 +20,16 @@ lint: install-golangci-lint
 	@echo "> Linting code..."
 	@golangci-lint run -c golangci.yaml
 
-test-hivex:
-	@echo "> Testing with Hivex Image"
-	docker build . -f tools/hivex-docker/Dockerfile --tag hivex-docker --quiet
-	docker run --rm -v gomodcache:/go/pkg/mod -v /var/run/docker.sock:/var/run/docker.sock --network=host hivex-docker \
-      $(GOCMD) test --tags=hivex -parallel=1 -count=1 -v ./...
+generate: build-bcdhive-gen
+	$(GOCMD) generate ./...
 
-test: format lint test-hivex
+build-bcdhive-gen:
+ifneq ($(OS),Windows_NT)
+	@echo "> Building bcdhive-gen in Docker"
+	docker build tools/bcdhive_gen --tag bcdhive-gen
+else
+	@echo "> Not compatible with Docker Windows"
+endif
+
+test: generate format lint
 	$(GOCMD) test -parallel=1 -count=1 -v ./...
