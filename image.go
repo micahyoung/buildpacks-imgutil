@@ -38,6 +38,7 @@ type Image interface {
 	SetEntrypoint(...string) error
 	SetWorkingDir(string) error
 	SetCmd(...string) error
+	SetPlatform(string, string, string) error
 	Rebase(string, Image) error
 	AddLayer(path string) error
 	AddLayerWithDiffID(path, diffID string) error

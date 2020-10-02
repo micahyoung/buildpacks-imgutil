@@ -280,7 +280,10 @@ func WindowsBaseLayer(t *testing.T) string {
 	AssertNil(t, err)
 	AssertNil(t, tarFile.Close())
 
-	baseLayerBytes, err := layer.BaseLayerBytes()
+	baseLayer, err := layer.WindowsBaseLayer()
+	AssertNil(t, err)
+
+	baseLayerBytes, err := ioutil.ReadAll(baseLayer)
 	AssertNil(t, err)
 
 	AssertNil(t, ioutil.WriteFile(tarFile.Name(), baseLayerBytes, 0666))

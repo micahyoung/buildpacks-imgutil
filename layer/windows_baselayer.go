@@ -3,39 +3,27 @@ package layer
 import (
 	"archive/tar"
 	"bytes"
+	"io"
 )
 
 //go:generate docker run --rm -v $PWD:/out/ bcdhive-gen /out/layer/bcdhive_gen.go layer BaseLayerBCD
 
-func BaseLayerBytes() ([]byte, error) {
+// Windows base layers must follow this pattern:
+//  \-> UtilityVM/Files/EFI/Microsoft/Boot/BCD   (file must exist and a valid BCD format - normally `bcdedit` tool as below)
+//  \-> Files/Windows/System32/config/DEFAULT   (file and must exist but can be empty)
+//  \-> Files/Windows/System32/config/SAM       (file must exist but can be empty)
+//  \-> Files/Windows/System32/config/SECURITY  (file must exist but can be empty)
+//  \-> Files/Windows/System32/config/SOFTWARE  (file must exist but can be empty)
+//  \-> Files/Windows/System32/config/SYSTEM    (file must exist but can be empty)
+// Refs:
+// https://github.com/microsoft/hcsshim/blob/master/internal/wclayer/legacy.go
+// https://github.com/containers/storage/blob/master/drivers/windows/windows.go
+func WindowsBaseLayer() (io.Reader, error) {
 	bcdBytes, err := BaseLayerBCD()
 	if err != nil {
 		return nil, err
 	}
 
-	return windowsBaseLayerBytes(bcdBytes)
-}
-
-// Windows image layers must follow this pattern¹:
-// - base layer² (always required; tar file with relative paths without "/" prefix; all parent directories require own tar entries)
-//   \-> UtilityVM/Files/EFI/Microsoft/Boot/BCD   (file must exist and a valid BCD format - via `bcdedit` tool as below)
-//   \-> Files/Windows/System32/config/DEFAULT   (file and must exist but can be empty)
-//   \-> Files/Windows/System32/config/SAM       (file must exist but can be empty)
-//   \-> Files/Windows/System32/config/SECURITY  (file must exist but can be empty)
-//   \-> Files/Windows/System32/config/SOFTWARE  (file must exist but can be empty)
-//   \-> Files/Windows/System32/config/SYSTEM    (file must exist but can be empty)
-// - normal or top layer (optional; tar file with relative paths without "/" prefix; all parent directories require own tar entries)
-//   \-> Files/                   (required directory entry)
-//   \-> Files/mystuff.exe        (optional container filesystem files - C:\mystuff.exe)
-//   \-> Hives/                   (required directory entry)
-//   \-> Hives/DefaultUser_Delta  (optional Windows reg hive delta; BCD format - HKEY_USERS\.DEFAULT additional content)
-//   \-> Hives/Sam_Delta          (optional Windows reg hive delta; BCD format - HKEY_LOCAL_MACHINE\SAM additional content)
-//   \-> Hives/Security_Delta     (optional Windows reg hive delta; BCD format - HKEY_LOCAL_MACHINE\SECURITY additional content)
-//   \-> Hives/Software_Delta     (optional Windows reg hive delta; BCD format - HKEY_LOCAL_MACHINE\SOFTWARE additional content)
-//   \-> Hives/System_Delta       (optional Windows reg hive delta; BCD format - HKEY_LOCAL_MACHINE\SYSTEM additional content)
-// 1. This was all discovered experimentally and should be considered an undocumented API, subject to change when the Windows Daemon internals change
-// 2. There are many other files in an "real" base layer but this is the minimum set which a Daemon can store and use to create an container
-func windowsBaseLayerBytes(bcdBytes []byte) ([]byte, error) {
 	layerBuffer := &bytes.Buffer{}
 	tw := tar.NewWriter(layerBuffer)
 
@@ -92,5 +80,5 @@ func windowsBaseLayerBytes(bcdBytes []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return layerBuffer.Bytes(), nil
+	return layerBuffer, nil
 }

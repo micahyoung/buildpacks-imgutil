@@ -242,6 +242,13 @@ func (i *Image) SetLabel(key, val string) error {
 	return nil
 }
 
+func (i *Image) SetPlatform(os, osVersion, architecture string) error {
+	i.inspect.Os = os
+	i.inspect.OsVersion = osVersion
+	i.inspect.Architecture = architecture
+	return nil
+}
+
 func (i *Image) RemoveLabel(key string) error {
 	delete(i.inspect.Config.Labels, key)
 	return nil

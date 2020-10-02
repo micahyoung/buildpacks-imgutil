@@ -122,6 +122,13 @@ func (i *Image) SetEnv(k string, v string) error {
 	return nil
 }
 
+func (i *Image) SetPlatform(o string, v string, a string) error {
+	i.os = o
+	i.osVersion = v
+	i.architecture = a
+	return nil
+}
+
 func (i *Image) SetWorkingDir(dir string) error {
 	i.workingDir = dir
 	return nil
@@ -265,12 +272,6 @@ func (i *Image) Found() bool {
 
 func (i *Image) SetIdentifier(identifier imgutil.Identifier) {
 	i.identifier = identifier
-}
-
-func (i *Image) SetPlatform(os, osVersion, architecture string) {
-	i.os = os
-	i.osVersion = osVersion
-	i.architecture = architecture
 }
 
 func (i *Image) Cleanup() error {

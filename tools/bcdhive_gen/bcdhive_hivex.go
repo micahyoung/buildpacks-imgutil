@@ -12,6 +12,13 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+// equivalent to `output-bcd` generated with:
+// bcdedit /createstore c:\output-bcd
+// bcdedit /create {6a6c1f1b-59d4-11ea-9438-9402e6abd998} /d buildpacks.io /application osloader /store c:\output-bcd
+// bcdedit /create {bootmgr} /store c:\output-bcd
+// bcdedit /set {bootmgr} default {6a6c1f1b-59d4-11ea-9438-9402e6abd998} /store c:\output-bcd
+// bcdedit /enum all /store c:\output-bcd`
+// Note: createstore guid is random
 var orderedEntries = []entry{
 	{"Description", []hivex.HiveValue{
 		{

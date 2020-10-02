@@ -351,6 +351,18 @@ func (i *Image) SetCmd(cmd ...string) error {
 	return err
 }
 
+func (i *Image) SetPlatform(os, osVersion, architecture string) error {
+	configFile, err := i.image.ConfigFile()
+	if err != nil {
+		return err
+	}
+	configFile.OS = os
+	configFile.OSVersion = osVersion
+	configFile.Architecture = architecture
+	i.image, err = mutate.ConfigFile(i.image, configFile)
+	return err
+}
+
 func (i *Image) TopLayer() (string, error) {
 	all, err := i.image.Layers()
 	if err != nil {
