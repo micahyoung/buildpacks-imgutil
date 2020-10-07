@@ -7,7 +7,7 @@ COPY . /src
 
 WORKDIR /src
 
-RUN go generate ./... \
+RUN go generate ./ \
     && go test -parallel=1 -count=1 -v . \
     && go install .
 

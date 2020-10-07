@@ -14,7 +14,7 @@ import (
 )
 
 // you must `go generate` a valid stub before running tests
-//go:generate go run ./ -- bcdhive_stub.go main StubHiveBCD
+//go:generate go run ./ -file=bcdhive_stub.go -package=main -func=StubHiveBCD
 
 func TestBaseLayerBCDMemoMatchesActual(t *testing.T) {
 	bcdBytes, err := HiveBCD()

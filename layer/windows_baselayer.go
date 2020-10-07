@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-//go:generate docker run --rm -v $PWD:/out/ bcdhive-gen /out/layer/bcdhive_gen.go layer BaseLayerBCD
+//go:generate docker run --rm -v $PWD:/out/ bcdhive-gen -file=/out/layer/bcdhive_gen.go -package=layer -func=BaseLayerBCD
 
 // Windows base layers must follow this pattern:
 //  \-> UtilityVM/Files/EFI/Microsoft/Boot/BCD   (file must exist and a valid BCD format - normally `bcdedit` tool as below)

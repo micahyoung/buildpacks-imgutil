@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
+	"flag"
 	"fmt"
 	"go/format"
 	"io"
@@ -13,20 +14,17 @@ import (
 	"text/template"
 )
 
+const tmplPath = `bcdhive_encoded.go.tmpl`
+
 type tmplData struct{ PackageName, FuncName, EncodedBytes string }
 
 func main() {
-	if len(os.Args) < 4 {
-		log.Fatalf("usage: %s <output go file> <package name> <func name>\n", os.Args[0])
-	}
+	outputFilePathPtr := flag.String("file", "", "generated file path")
+	outputPackageNamePtr := flag.String("package", "", "generated package name")
+	outputFuncNamePtr := flag.String("func", "", "generated function name")
+	flag.Parse()
 
-	// grab last 3 args to support `go run main.go -- out.go mypkg MyFunc `
-	nArgs := len(os.Args)
-	outputFilePath := os.Args[nArgs-3]
-	outputPackageName := os.Args[nArgs-2]
-	outputFuncName := os.Args[nArgs-1]
-	tmplPath := `bcdhive_encoded.go.tmpl`
-	if err := run(tmplPath, outputFilePath, outputPackageName, outputFuncName); err != nil {
+	if err := run(tmplPath, *outputFilePathPtr, *outputPackageNamePtr, *outputFuncNamePtr); err != nil {
 		log.Fatal(err)
 	}
 }
