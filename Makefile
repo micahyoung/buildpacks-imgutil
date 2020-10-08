@@ -27,6 +27,14 @@ else
 	@echo "> Not compatible with Docker Windows"
 endif
 
+install-hivex-darwin:
+ifneq ($(OS),Windows_NT)
+	@echo "> Building bcdhive-gen in Docker"
+	docker build tools/bcdhive_gen --tag bcdhive-gen-darwin
+else
+	@echo "> Not compatible with Docker Windows"
+endif
+
 build-bcdhive-gen:
 ifneq ($(OS),Windows_NT)
 	@echo "> Building bcdhive-gen in Docker"

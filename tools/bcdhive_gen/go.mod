@@ -1,4 +1,4 @@
-module bcdhive_gen
+module github.com/buildpack/pack/tools/bcdhive_gen
 
 go 1.15
 

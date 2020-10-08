@@ -6,6 +6,7 @@ require (
 	github.com/gabriel-samfira/go-hivex v0.0.0-20190725123041-b40bc95a7ced
 	github.com/google/go-cmp v0.5.2
 	github.com/google/go-containerregistry v0.0.0-20200311163244-4b1985e5ea21
+	github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sclevine/spec v1.4.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
