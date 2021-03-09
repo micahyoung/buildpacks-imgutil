@@ -26,6 +26,7 @@ type DockerRegistry struct {
 	DockerDirectory string
 	username        string
 	password        string
+	Volume      string
 }
 
 var registryImageName = "micahyoung/registry:latest"
@@ -46,10 +47,11 @@ func NewDockerRegistryWithAuth(dockerConfigDir string) *DockerRegistry {
 }
 
 func (r *DockerRegistry) Start(t *testing.T) {
+	t.Helper()
+
 	r.Host = DockerHostname(t)
 
 	t.Logf("run registry on %s", r.Host)
-	t.Helper()
 
 	PullIfMissing(t, DockerCli(t), registryImageName)
 
@@ -82,6 +84,7 @@ func (r *DockerRegistry) Start(t *testing.T) {
 		PortBindings: nat.PortMap{
 			"5000/tcp": []nat.PortBinding{{}},
 		},
+		Binds: []string{fmt.Sprintf("%s:/registry-storage", r.Volume)},
 	}, nil, r.Name)
 	AssertNil(t, err)
 
